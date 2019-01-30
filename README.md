@@ -7,13 +7,18 @@
 * ## [js](#js)
 	* [js的数据类型](#js的数据类型)
 	* [类型转化](#类型转换)
-	* [原生函数](#原生函数) 预解析 作用域
-	* [高级函数](#高级函数)
-	* [new一个函数的时候发生了什么](#new一个函数的时候发生了什么)
-	* 闭包
+	* [原生函数](#原生函数)
+	* [执行上下文](#执行上下文)
+	* [作用域](#作用域)
 	* [this](#this)
+	* [闭包](#闭包)
 	* [原型和原型链](#原型和原型链)
+	* [new一个函数的时候发生了什么](#new一个函数的时候发生了什么)
 	* [如何实现一个对象的深克隆](#如何实现一个对象的深克隆)
+	* [高级函数](#高级函数)
+	    * [惰性载入函数](#惰性载入函数)
+	    * [函数防抖debounce](#函数防抖debounce)
+	    * [函数节流throttle](#函数节流throttle)
 	* [事件机制](#事件机制)
 	* [垃圾收集](#垃圾收集)
 	* dom
@@ -22,6 +27,8 @@
 	* [设计模式](#设计模式)
 	* [模块化](#模块化)
 * ## [web](#web)
+	* tcp协议
+	* http 协议
 	* [web安全](#web安全)
 	* 前端优化方案
 	* 浏览器缓存
@@ -108,65 +115,48 @@ RegExp
 Date
 Error
 Symbol
-### 高级函数  
-1. 惰性载入函数  
-```javascript
-// 因为浏览器之间行为的差异，多数JavaScript代码包含了大量的if语句，将执行引导到正确的代码中
-// 创建ajax对象，每次调用都会重复执行if判断，但是是不必要的
-function createXhr() {
-	if('XMLHttpRequest' in window) {
-		console.log('none-ie');
-		return new XMLHttpRequest();
-	} else if('ActiveXObject' in window) {
-		console.log('ie');
-		return new ActiveXObject('Microsoft.XMLHTTP');
-	}
-}
-// 有两种实现惰性载入的方式，第一种就是在函数被调用时再处理函数。在第一次调用的过程中，该函数会被覆盖为另外一个按合适方式执行的函数，这样任何对原函数的调用都不用再经过执行的分支了
-function createXhr() {
-	if('XMLHttpRequest' in window) {
-		createXhr = function() {
-			return new XMLHttpRequest();
-		}
-	} else if('ActiveXObject' in window) {
-		createXhr = function() {
-			return new ActiveXObject('Microsoft.XMLHTTP');
-		}
-	}
-	return createXhr()
-}
-// 第二种实现惰性载入的方式是在声明函数时就指定适当的函数。这样，第一次调用函数时就不会损失性能
-// 了，而在代码首次加载时会损失一点性能
-var createXhr = (function () {
-	if('XMLHttpRequest' in window) {
-		return function() {
-			return new XMLHttpRequest();
-		}
-	} else if('ActiveXObject' in window) {
-		return function() {
-			return new ActiveXObject('Microsoft.XMLHTTP');
-		}
-	}
-	return createXhr()
-})();
+### 执行上下文  
+在JavaScript中有三种代码运行环境:
++ Global Code: JavaScript代码开始运行的默认环境  
++ Function Code: 代码进入一个JavaScript函数  
++ Eval Code: 使用eval()执行代码
 
-```
-2. 函数节流  
-函数节流背后的基本思想是指，某些代码不可以在没有间断的情况连续重复执行, 当达到了一定的时间间隔就会执行一次, 可以理解为是缩减执行频率, 最常用的就是在监听页面元素滚动事件的时候会用到。因为滚动事件，是一个高频触发的事件
+为了表示不同的运行环境，JavaScript中有一个执行上下文（Execution context，EC）的概念。也就是说，当JavaScript代码执行的时候，会进入不同的执行上下文，这些执行上下文就构成了一个执行上下文栈（Execution context stack，ECS）。
+每一个执行上下文有三个重要的属性: 变量对象(VO), 作用域链, this.  
+只有全局上下文的变量对象允许通过VO的属性名称来间接访问(因为在全局上下文里，全局对象自身就是变量对象)，在其它上下文中是不能直接访问VO对象的，因为它只是内部机制的一个实现.    
+当一段JavaScript代码执行的时候，JavaScript解释器会创建Execution Context，其实这里会有两个阶段：
+
++进入执行上下文阶段（当函数被调用，但是开始执行函数内部代码之前）
+	- 创建Scope chain
+	- 创建VO/AO（variables, functions and arguments）
+		+ 函数的所有形参(如果我们是在函数执行上下文中) — 由名称和对应值组成的一个变量对象的属性被创建；没有传递对应参数的话，那么由名称和undefined值组成的一种变量对象的属性也将被创建。
+		+ 所有函数声明(FunctionDeclaration, FD)—由名称和对应值（函数对象(function-object)）组成一个变量对象的属性被创建；如果变量对象已经存在相同名称的属性，则完全替换这个属性。
+		+ 所有变量声明(var, VariableDeclaration) — 由名称和对应值（undefined）组成一个变量对象的属性被创建；如果变量名称跟已经声明的形式参数或函数相同，则变量声明不会干扰已经存在的这类属性
+	- 设置this的值
++ 激活/代码执行阶段
+	- 设置变量的值、函数的引用，然后解释/执行代码
+
+让我们看一个例子：
 ```javascript
-function throttle(fn, context) {
-	clearTimeout(fn.timeId);
-	fn.timeId = setTimeout(function() {
-		fn.call(context);
-	}, 100)
+function test(a, b) {
+  var c = 10;
+  function d() {}
+  var e = function _e() {};
+  (function x() {});
 }
+ 
+test(10); // call
+当进入带有参数10的test函数上下文时，AO表现为如下：
+
+AO(test) = {
+  a: 10,
+  b: undefined,
+  c: undefined,
+  d: <reference to FunctionDeclaration "d">
+  e: undefined
+};
 ```
-3. 函数防抖 todo
-### new一个函数的时候发生了什么		
-1. 创建（或者说构造）一个全新的对象。
-2. 这个新对象会被执行[[原型]]连接。
-3. 这个新对象会绑定到函数调用的this。
-4. 如果函数没有返回其他对象，那么new表达式中的函数调用会自动返回这个新对象。
+### 作用域
 
 ### this    
 this是在运行时进行绑定的，并不是在编写时绑定，它的上下文取决于函数调用时的各种条件。this的绑定和函数声明的位置没有任何关系，只取决于函数的调用方式。    
@@ -218,7 +208,6 @@ var obj = {
 };
 
 var bar = obj.foo; // 函数别名！
-￼
 var a = "oops, global"; // a是全局对象的属性
 
 bar(); // "oops, global"
@@ -251,14 +240,114 @@ var obj = {
 foo.call( obj ); // 2
 // 注意 如果第一个参数传入的对象调用者是null或者undefined的话，call方法将把全局对象（也就是window）作// 作为this的值
 ```
-4. new绑定
-5. es6的箭头函数: 箭头函数不使用this的四种标准规则，而是根据外层（函数或者全局）作用域来决定this。
+### 高级函数  
+#### 惰性载入函数  
+```javascript
+// 因为浏览器之间行为的差异，多数JavaScript代码包含了大量的if语句，将执行引导到正确的代码中
+// 创建ajax对象，每次调用都会重复执行if判断，但是是不必要的
+function createXhr() {
+	if('XMLHttpRequest' in window) {
+		console.log('none-ie');
+		return new XMLHttpRequest();
+	} else if('ActiveXObject' in window) {
+		console.log('ie');
+		return new ActiveXObject('Microsoft.XMLHTTP');
+	}
+}
+// 有两种实现惰性载入的方式，第一种就是在函数被调用时再处理函数。在第一次调用的过程中，该函数会被覆盖为另外一个按合适方式执行的函数，这样任何对原函数的调用都不用再经过执行的分支了
+function createXhr() {
+	if('XMLHttpRequest' in window) {
+		createXhr = function() {
+			return new XMLHttpRequest();
+		}
+	} else if('ActiveXObject' in window) {
+		createXhr = function() {
+			return new ActiveXObject('Microsoft.XMLHTTP');
+		}
+	}
+	return createXhr()
+}
+// 第二种实现惰性载入的方式是在声明函数时就指定适当的函数。这样，第一次调用函数时就不会损失性能
+// 了，而在代码首次加载时会损失一点性能
+var createXhr = (function () {
+	if('XMLHttpRequest' in window) {
+		return function() {
+			return new XMLHttpRequest();
+		}
+	} else if('ActiveXObject' in window) {
+		return function() {
+			return new ActiveXObject('Microsoft.XMLHTTP');
+		}
+	}
+	return createXhr()
+})();
 
-### 执行上下文  
+```
+在开发过程中会遇到频率很高的事件或者连续的事件，如果不进行性能的优化，就可能会出现页面卡顿的现象，比如：
+
+鼠标事件：mousemove(拖曳)/mouseover(划过)/mouseWheel(滚屏)  
+键盘事件：keypress(基于ajax的用户名唯一性校验)/keyup(文本输入检验、自动完成)/keydown(游戏中的射击)  
+window的resize/scroll事件(DOM元素动态定位)  
+为了解决这类问题，常常使用的方法就是throttle(节流)和debounce(去抖)。throttle(节流)和debounce(去抖)都是用来控制某个函数在一定时间内执行多少次的解决方案，两者相似而又不同
+#### 函数防抖debounce  
+当调用动作触发一段时间后，才会执行该动作，若在这段时间间隔内又调用此动作则将重新计算时间间隔
+首先来看看debounce的实现，根据前面对debounce的描述：  
+debounce函数会通过闭包维护一个timer
+当同一action在delay的时间间隔内再次触发，则清理timer，然后重新设置timer
+```javascript
+function debounce(action, delay) {
+   var timer = null;
+   return function () {
+       var self = this,
+       args = arguments;
+       clearTimeout(timer);
+       timer = setTimeout(function() {
+           action.apply(self, args)
+       }, delay)
+   }
+}
+// example
+function resizeHandler() {
+    console.log("resize");
+}
+
+window.onresize = debounce(resizeHandler, 300);
+
+```
+#### 函数节流throttle  
+函数节流背后的基本思想是指，某些代码不可以在没有间断的情况连续重复执行, 当达到了一定的时间间隔就会执行一次, 可以理解为是缩减执行频率, 最常用的就是在监听页面元素滚动事件的时候会用到。因为滚动事件，是一个高频触发的事件
+throttle跟debounce的最大不同就是，throttle会有一个阀值，当到达阀值的时候action必定会执行一次
+```javascript
+function throttle(action, delay) {
+    var startTime = 0, timer = null;
+    return function() {
+        var self = this;
+        var args = arguments;
+        var currTime = +new Date();
+        if (currTime - startTime > delay) {
+            action.apply(self, args)
+            startTime = currTime;
+        }
+    }
+}
+```
+
+### new一个函数的时候发生了什么		
+1. 创建（或者说构造）一个全新的对象。
+2. 这个新对象会被执行[[原型]]连接。
+3. 这个新对象会绑定到函数调用的this。
+4. 如果函数没有返回其他对象，那么new表达式中的函数调用会自动返回这个新对象。
+
+4. new绑定
+5. es6的箭头函数: 箭头函数不使用this的四种标准规则，而是根据外层（函数或者全局）作用域来决定this。### 执行上下文  
 一个执行的上下文可以抽象的理解为object。每一个执行的上下文都有一系列的属性（我们称为上下文状态），他们用来追踪关联代码的执行进度。这个图示就是一个context的结构。主要的三个属性:变量对象(variable object)，this指针(this value)，作用域链(scope chain), 在一个函数上下文中，变量对象被表示为活动对象(activation object)。
 
-### 原型和原型链    
-A prototype chain is a finite chain of objects which is used to implemented inheritance and shared properties.(原型链是由有限对象组成的对象链，用于实现继承和共享属性)
+### 原型和原型链
+>A prototype chain is a finite chain of objects which is used to implemented inheritance and shared properties.(原型链是由有限对象组成的对象链，用于实现继承和共享属性)  
+
+在JavaScript中，原型也是一个对象，通过原型可以实现对象的属性继承，JavaScript的对象中都包含了一个" [[Prototype]]"内部属性，这个属性所对应的就是该对象的原型。
+
+"[[Prototype]]"作为对象的内部属性，是不能被直接访问的。所以为了方便查看一个对象的原型，Firefox和Chrome中提供了"__proto__"这个非标准（不是所有浏览器都支持）的访问器
 ```javascript
 function Foo(y) {
     this.y = y
@@ -286,6 +375,16 @@ b.__proto__.calculate === Foo.prototype.calculate // true
 上述代码可以用下图表示
 
 ![关系](./images/prototype.png)
+```javascript
+	function Dog(name, furColor) {
+		this.name = name;
+		this.furColor = furColor;
+		this.bark = function() {
+			 console.log(this.furColor + "的" + this.name + "can bark");
+		}
+	}
+	var dog = new Dog('baby', 'black')
+```
 ### 如何实现一个对象的深克隆  
 1. 最简单的办法就是`JSON.parse(JSON.stringify(obj))`, 但是会丢失原型链，如果存在循环引用的问题，也会出错, 函数, undefined会忽略，日期对象也转换成了日期字符串
 ```javascript
@@ -345,6 +444,27 @@ window的load事件会在页面中的一切都加载完毕时触发，但这个�
 ### 设计模式
 1. 单例模式  
 单例就是保证一个类只有一个实例，实现的方法一般是先判断实例存在与否，如果存在直接返回，如果不存在就创建了再返回，这就确保了一个类只有一个实例对象
+```javascript
+	var Singleton = (function () {
+		var instantiated;
+		function init() {
+			return {
+				publicMethod(){
+
+				}
+			}
+		}
+		return {
+			getInstance() {
+				if(!instantiated) {
+					instantiated = init();
+				}
+				return instantiated
+			}
+		}
+		
+	})();
+```
 ### 模块化
 ## web
 ### web安全  
