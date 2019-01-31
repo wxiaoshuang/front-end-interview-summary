@@ -4,6 +4,8 @@
 	* [实现居中的方法](#实现居中的方法)
 	* [圣杯布局和双飞翼布局](圣杯布局和双飞翼布局)
 	* [实现粘性footer](#实现粘性footer)
+	* [flex布局](#flex布局)
+	* [grid布局](#grid布局)
 * ## [js](#js)
 	* [js的数据类型](#js的数据类型)
 	* [类型转化](#类型转换)
@@ -12,6 +14,7 @@
 	* [作用域](#作用域)
 	* [this](#this)
 	* [闭包](#闭包)
+	* [函数参数传参策略](函数参数传参策略)
 	* [原型和原型链](#原型和原型链)
 	* [new一个函数的时候发生了什么](#new一个函数的时候发生了什么)
 	* [如何实现一个对象的深克隆](#如何实现一个对象的深克隆)
@@ -341,7 +344,36 @@ function throttle(action, delay) {
 4. new绑定
 5. es6的箭头函数: 箭头函数不使用this的四种标准规则，而是根据外层（函数或者全局）作用域来决定this。### 执行上下文  
 一个执行的上下文可以抽象的理解为object。每一个执行的上下文都有一系列的属性（我们称为上下文状态），他们用来追踪关联代码的执行进度。这个图示就是一个context的结构。主要的三个属性:变量对象(variable object)，this指针(this value)，作用域链(scope chain), 在一个函数上下文中，变量对象被表示为活动对象(activation object)。
+### 函数参数传参策略
+传值的三种策略: 1：按值传递；2：引用传递；3：按照共享传递  
+1 传递一份值的拷贝
+```javascript
+function test(a) {
+    a = 10;
+}
+var b = 20;
+test(b);
+console.log(b) // 20
+```
+2. 按照引用传递  
+    在内部改变属性或者重新赋值都会影响外部
+3. 共享传递，函数参数接收的是引用地址的拷贝(地址副本)
+```javascript
+function testObj(obj) {
+    obj.a = 100;
+}
+var o = {a:20};
+testObj(o)
+console.log(o); // {a: 100}
 
+function testObj2(obj) {
+    obj = {b: 20}; // 重新赋值分配，绑定是新的对象标识符（新地址），而不影响已经先前绑定的对象
+}
+var o = {a:20};
+testObj(o)
+console.log(o); // {a: 20}
+```
+总结：js基本数据类型是按照值传递的，引用类型按照共享传递
 ### 原型和原型链
 >A prototype chain is a finite chain of objects which is used to implemented inheritance and shared properties.(原型链是由有限对象组成的对象链，用于实现继承和共享属性)  
 
@@ -464,7 +496,21 @@ window的load事件会在页面中的一切都加载完毕时触发，但这个�
 		}
 		
 	})();
+var a = Singleton.getInstance().publicMethod();
 ```
+观察者模式  
+观察者模式又叫发布订阅模式（Publish/Subscribe），它定义了一种一对多的关系，让多个观察者对象同时监听某一个主题对象，这个主题对象的状态发生变化时就会通知所有的观察者对象，使得它们能够自动更新自己。
+
+使用观察者模式的好处:  
+    + 支持简单的广播通信，自动通知所有已经订阅过的对象。
+    + 页面载入后目标对象很容易与观察者存在一种动态关联，增加了灵活性。
+    + 目标对象与观察者之间的抽象耦合关系能够单独扩展以及重用。
+
+version1
+```javascript
+
+```
+
 ### 模块化
 ## web
 ### web安全  
