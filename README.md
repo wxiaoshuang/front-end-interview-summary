@@ -22,6 +22,7 @@
 	    * [惰性载入函数](#惰性载入函数)
 	    * [函数防抖debounce](#函数防抖debounce)
 	    * [函数节流throttle](#函数节流throttle)
+		* [函数记忆](#函数记忆)
 	* [事件机制](#事件机制)
 	* [垃圾收集](#垃圾收集)
 	* dom
@@ -29,13 +30,15 @@
 	* 函数式编程
 	* [设计模式](#设计模式)
 	* [模块化](#模块化)
+	* [实现一个模板引擎](#实现一个模板引擎)
 * ## [web](#web)
 	* tcp协议
-	* http 协议
+	* http协议
+	* https协议
 	* [web安全](#web安全)
 	* 前端优化方案
 	* 浏览器缓存
-	* 从在浏览器的地址里面输入url到页面渲染出来发生了什么
+	* 从在浏览器的地址里面输入url到页面渲染发生了什么
 * ## [大前端](#大前端)
 	* vue
 		* 实现数据响应式
@@ -498,19 +501,133 @@ window的load事件会在页面中的一切都加载完毕时触发，但这个�
 	})();
 var a = Singleton.getInstance().publicMethod();
 ```
-观察者模式  
-观察者模式又叫发布订阅模式（Publish/Subscribe），它定义了一种一对多的关系，让多个观察者对象同时监听某一个主题对象，这个主题对象的状态发生变化时就会通知所有的观察者对象，使得它们能够自动更新自己。
-
+2. 观察者模式  
+观察者模式又叫发布订阅模式（Publish/Subscribe），它定义了一种一对多的关系，让多个观察者对象同时监听某一个主题对象，这个主题对象的状态发生变化时就会通知所有的观察者对象，使得它们能够自动更新自己。  
 使用观察者模式的好处:  
     + 支持简单的广播通信，自动通知所有已经订阅过的对象。
     + 页面载入后目标对象很容易与观察者存在一种动态关联，增加了灵活性。
     + 目标对象与观察者之间的抽象耦合关系能够单独扩展以及重用。
 
-version1
+
 ```javascript
+class EventEmitter {
+    constructor() {
+        this._events = Object.create(null)
+    }
+    on(name, callback) {
+        let isHas = !!this._events[name]
+        if(!isHas) {
+            let fns = []
+            fns.push(callback)
+            this._events[name] = fns 
+        } else {
+            this._events[name].push(callback);
+        }
+    }
+    off(name, fn) {
+        let isHas = !!this._events[name]
+        if(!isHas) {
+            console.log('尚未订阅')
+        } else {
+            if (!fn) {
+                delete this._events[name];
+                return this;
+            } else {
+                let index = this._events[name].indexOf(fn)
+                if(index > -1) {
+                    this._events[name].splice(index, 1)
+                }
+            }
+        }
+    }
+    emit(name, ...args) {
+        let fns = this._events[name]
+        let isHas = !!fns
+        if(isHas) {
+            for (let i = 0; i < fns.length; i++) {
+              fns[i](...args)    
+            }
+        }
+    }
+}
+// 测试
+var a = new EventEmitter();
+a.on('hello', function(params) {
+    console.log("hello, "+ params)
+})
+a.on('hello', function(params) {
+    console.log("hello, 又订阅了一次"+ params)
+})
+a.emit('hello', 'i love you')
+a.off('hello')
+a.emit('hello', 'i hate you')
+a.on('hello', function(params) {
+    console.log("hello, "+ params)
+})
+a.emit('hello','i love you again')
 
 ```
+3. 代理模式  
+代理模式（Proxy），为其他对象提供一种代理以控制对这个对象的访问。在某些情况下，一个对象不适合或者不能直接引用另一个对象，而代理对象可以在客户端和目标对象之间起到中介的作用  
+虚拟代理是把一些开销很大的对象，延迟到真正需要它的时候才去创建执行
+虚拟代理  
+虚拟代理是把一些开销很大的对象，延迟到真正需要它的时候才去创建执行  
+图片懒加载  
+```javascript
+let imageEle = (function(){
+    let node = document.createElement('img');
+    document.body.appendChild(node);
+    return {
+        setSrc:function(src){
+            node.src = src;
+        }
+    }
+})();
 
+//代理对象
+let proxy = (function(){
+    let img = new Image();
+    img.onload = function(){
+        imageEle.setSrc(this.src);
+    };
+    return {
+        setSrc:function(src){
+            img.src = src;
+            imageEle.setSrc('loading.gif');
+        }
+    }
+})();
+
+
+proxy.setSrc('example.png');
+```
+// 缓存代理，将结果缓存起来，尤其是处理大量重复的运算
+```javascript
+function add(...args) {
+    return args.reduce(function (prev, next) {
+        return prev + next
+    }, 0)
+}
+var proxyFnFactory = function (fn) {
+    var cache = {}
+    return function (...args) {
+        var params = args.join(',')
+        if (params in cache) {
+            console.log('利用缓存')
+            return cache[params] // 从缓存中取值
+        } else {
+            console.log('第一次计算')
+            cache[params] = fn.apply(this, args) // 放入缓存
+            return cache[params]
+        }
+    }
+}
+var proxyAdd = proxyFnFactory(add)
+console.log(proxyAdd(1,2,3,4,5));
+console.log(proxyAdd(1,2,3,4,5));
+console.log(proxyAdd(1,2,3,4,5))
+```
+4. 
 ### 模块化
 ## web
 ### web安全  
