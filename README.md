@@ -1,13 +1,6 @@
 # 前端面试题
-## html
-* ## css  
-	* [实现居中的方法](#实现居中的方法)
-	* [圣杯布局和双飞翼布局](圣杯布局和双飞翼布局)
-	* [实现粘性footer](#实现粘性footer)
-	* [flex布局](#flex布局)
-	* [grid布局](#grid布局)
 * ## [js](#js)
-	* [js的数据类型](#js的数据类型)
+	* [数据类型](#数据类型)
 	* [类型转化](#类型转换)
 	* [原生函数](#原生函数)
 	* [执行上下文](#执行上下文)
@@ -31,6 +24,8 @@
 	* [设计模式](#设计模式)
 	* [模块化](#模块化)
 	* [实现一个模板引擎](#实现一个模板引擎)
+* ## [算法](#算法)
+	* 数组的随机排序
 * ## [web](#web)
 	* tcp协议
 	* http协议
@@ -54,7 +49,7 @@
 # 答案整理
 ## js
 ### 数据类型    
-基本数据类型(值类型)： number, string, boolean, symbol, undefined
+基本数据类型(值类型)：number, string, boolean, symbol, undefined, null
 复杂数据类型(引用类型)：object ( array, function)
 ```javascript
 // 使用typeof 判断基本数据类型
@@ -62,9 +57,10 @@ typeof 123 // 'number'
 typeof 'abv' // 'string'
 typeof true // 'boolean'
 typeof undefined // 'undefined'
+typeof Symbol() // 'symbol'
 typeof {} // 'object'
 typeof [] // 'object'
-typeof condole.log // 'function'
+typeof console.log // 'function'
 typeof null  // 'object'
 // 引用类型的判断
 Object.prototype.toString.call({}) // '[object Object]'
@@ -420,6 +416,7 @@ b.__proto__.calculate === Foo.prototype.calculate // true
 	}
 	var dog = new Dog('baby', 'black')
 ```
+更多关于原型的知识，参考[博文](!https://www.cnblogs.com/wilber2013/p/4924309.html)
 ### 如何实现一个对象的深克隆  
 1. 最简单的办法就是`JSON.parse(JSON.stringify(obj))`, 但是会丢失原型链，如果存在循环引用的问题，也会出错, 函数, undefined会忽略，日期对象也转换成了日期字符串
 ```javascript
@@ -471,6 +468,7 @@ var EventUtil = {
 };
 ```
 window的load事件会在页面中的一切都加载完毕时触发，但这个过程可能会因为要加载的外部资源过多而颇费周折。而DOMContentLoaded事件则在形成完整的DOM树之后就会触发，不理会图像、JavaScript文件、CSS文件或其他资源是否已经下载完毕。与load事件不同，DOMContentLoaded支持在页面下载的早期添加事件处理程序，这也就意味着用户能够尽早地与页面进行交互。
+### 事件循环
 ### 垃圾收集
 1. 标记清除  
 	垃圾收集器在运行的时候会给存储在内存中的所有变量都加上标记（当然，可以使用任何标记方式）。然后，它会去掉环境中的变量以及被环境中的变量引用的变量的标记。而在此之后再被加上标记的变量将被视为准备删除的变量，原因是环境中的变量已经无法访问到这些变量了。最后，垃圾收集器完成内存清除工作，销毁那些带标记的值并回收它们所占用的内存空间。现在浏览器基本都是这个这种方式或者类似策略	
@@ -629,6 +627,7 @@ console.log(proxyAdd(1,2,3,4,5))
 ```
 4. 
 ### 模块化
+
 ## web
 ### web安全  
 1. xss
